@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン画面</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="login-container">
+        <h1>ログイン</h1>
+        <p>ユーザー名とパスワードを入力してください。</p>
+        <p>なにを入力してもログインできます。</p>
+        <form id="loginForm" action="#">
+            <div class="form-group">
+                <label for="username">ユーザー名:</label>
+                <input type="text" id="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">パスワード:</label>
+                <input type="password" id="password" required>    
+            </div>
+            
+            <button type="submit">ログイン</button>
+        </form>
+    </div>
+    <script src="login.js"></script>
+</body>
+</html>

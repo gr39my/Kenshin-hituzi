@@ -1,0 +1,108 @@
+
+/* ログインフォーム全体のスタイル */
+.login-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* 各フォームグループをブロック要素として配置 */
+.form-group {
+    margin-bottom: 15px;
+}
+
+/* ラベルはブロックレベルの要素に */
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+/* 入力フィールドのスタイル */
+input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* ログインボタンのスタイル */
+button[type="submit"] {
+    width: 100%;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button[type="submit"]:hover {
+    background-color: #45a049;
+}
+
+
+
+/* もろもろ*/
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+
+h1 {
+    text-align: center;
+}
+
+h2 {
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 10px;
+    margin-top: 60px;
+}
+
+.container-item {
+    margin: 20px 0;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.container-item h3 {
+    margin: 0;
+    color: #333;
+}
+
+.container-item p {
+    font-size: 12px;
+    margin: 5px 0 10px;
+    line-height: 1.5;
+}
+
+
+.advice-container {
+    display: flex; /* フレックスボックスで横に並べる */
+    align-items: flex-start; /* 上揃え */
+    margin: 10px 0; /* 上下のマージンを調整 */
+}
+
+.bubble-image {
+    width: 50px; /* 画像の幅 */
+    height: 50px; /* 画像の高さ */
+    border-radius: 50%; /* 画像を丸くする */
+    margin-right: 10px; /* 画像と吹き出しの間のマージン */
+}
+
+.advice-bubble {
+    background-color: #f1f1f1; /* 吹き出しの背景色 */
+    border: 1px solid #ccc; /* 吹き出しの枠線 */
+    border-radius: 10px; /* 吹き出しの角を丸くする */
+    padding: 10px 15px; /* 吹き出しの内側のパディング */
+    max-width: 540px; /* 吹き出しの幅 */
+}

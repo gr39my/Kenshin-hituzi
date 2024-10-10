@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康診断結果</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>健康診断結果</h1>
+
+        <h2>高血圧に関する項目</h2>
+        
+        <div class="container-item">
+            <h3>最大血圧</h3>
+            <p>最大血圧は、心臓が収縮して血液を全身に送り出すときの血圧です。高血圧のリスクを示す重要な指標です。</p>
+            <canvas id="maxBloodPressureChart" width="400" height="200"></canvas>
+        </div>
+        
+        <div class="container-item">
+            <h3>最小血圧</h3>
+            <p>最小血圧は、心臓が拡張して血液が心臓に戻るときの血圧です。健康を維持するためには、正常範囲を保つことが重要です。</p>
+            <canvas id="minBloodPressureChart" width="400" height="200"></canvas>
+        </div>
+        
+        <div class="advice-container">
+            <img src="hituzi.png" alt="Character" class="bubble-image">
+            <div class="advice-bubble">
+                <div id="advice_HBP"></div>
+            </div>
+        </div>
+
+        <h2>脂質異常症に関する項目</h2>
+
+        <div class="container-item">
+            <h3>中性脂肪</h3>
+            <p>中性脂肪は、体に必要なエネルギー源ですが、過剰になると心疾患のリスクが高まります。</p>
+            <canvas id="triglyceridesChart" width="400" height="200"></canvas>
+        </div>
+
+        <div class="container-item">
+            <h3>HDL-C</h3>
+            <p>HDL-Cは、いわゆる「善玉コレステロール」で、血管内の余分なコレステロールを運び出します。正常値を維持することが重要です。</p>
+            <canvas id="hdlChart" width="400" height="200"></canvas>
+        </div>
+
+        <div class="container-item">
+            <h3>LDL-C</h3>
+            <p>LDL-Cは、「悪玉コレステロール」と呼ばれ、過剰になると動脈硬化のリスクが増加します。注意が必要です。</p>
+            <canvas id="ldlChart" width="400" height="200"></canvas>
+        </div>
+
+        <div class="advice-container">
+            <img src="hituzi.png" alt="Character" class="bubble-image">
+            <div class="advice-bubble">
+                <div id="advice_HL"></div>
+            </div>
+        </div>
+
+        <h2>糖尿病に関する項目</h2>
+
+        <div class="container-item">
+            <h3>HbA1c</h3>
+            <p>HbA1cは、過去数ヶ月間の血糖値の平均を示す指標です。糖尿病の診断や管理に利用されます。</p>
+            <canvas id="hba1cChart" width="400" height="200"></canvas>
+        </div>
+
+        <div class="container-item">
+            <h3>空腹時血糖</h3>
+            <p>空腹時血糖は、食事をとっていない状態での血糖値を測定します。糖尿病の早期発見に役立ちます。</p>
+            <canvas id="fastingBloodSugarChart" width="400" height="200"></canvas>
+        </div>
+        
+        <div class="advice-container">
+            <img src="hituzi.png" alt="Character" class="bubble-image">
+            <div class="advice-bubble">
+                <div id="advice_DM"></div>
+            </div>
+        </div>
+
+    
+    </div>
+    <script src="result.js"></script>
+</body>
+</html>
