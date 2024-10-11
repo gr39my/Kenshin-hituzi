@@ -17,7 +17,6 @@ function calculateAge(birthdate) {
     return age;
 }
 
-
 // 年齢範囲を決定する関数
 function getAgeRange(age) {
     if (age >= 40 && age <= 44) {
@@ -44,16 +43,6 @@ const ageRange = getAgeRange(age);
 const comparisonMessage = `${prefecture}かつ${gender}かつ${ageRange}との比較`;
 document.getElementById('comparisonMessage').textContent = comparisonMessage;
 
-
-const maxBloodPressure = parseInt(localStorage.getItem('maxBloodPressure')) || 0;
-const minBloodPressure = parseInt(localStorage.getItem('minBloodPressure')) || 0;
-const triglycerides = parseInt(localStorage.getItem('triglycerides')) || 0;
-const hdl = parseInt(localStorage.getItem('hdl')) || 0;
-const ldl = parseInt(localStorage.getItem('ldl')) || 0;
-const hba1c = parseFloat(localStorage.getItem('hba1c')) || 0;
-const fastingBloodSugar = parseInt(localStorage.getItem('fastingBloodSugar')) || 0;
-
-
 // 基準値
 const standards = {
     maxBloodPressure: { normal: 120, caution: 139, abnormal: 140 },
@@ -65,65 +54,129 @@ const standards = {
     fastingBloodSugar: { normal: 99, caution: 125, abnormal: 126 }
 };
 
-// CSVデータを取得する関数
-async function fetchData() {
-    const response = await fetch('open_data/data/拡張期血圧.csv');
-    const data = await response.text();
-    return parseCSV(data);
-}
+// 各CSVファイル名をリスト化
+const csvFiles = [
+    //'BMI.csv',
+    //'腹囲.csv',
 
-// CSVを解析する関数
-function parseCSV(data) {
+    '拡張期血圧.csv',
+    '収縮期血圧.csv',
+    
+    '中性脂肪.csv',
+    'LDL-C.csv',
+    'HDL-C.csv',
+
+    'HbA1C.csv',
+    '空腹時血糖.csv'//,
+
+    //'血清クレアチニン.csv',
+    //'γ-GTP.csv',
+    //'GPT(ALT).csv',
+    //'GOT(AST).csv',
+    //'eGFR.csv',
+    //'尿糖.csv',
+    //'尿蛋白.csv'
+];
+
+// CSVデータを取得し解析する関数
+async function fetchAndParseCSV(url) {
+    const response = await fetch(url);
+    const data = await response.text();
+    
     const rows = data.split('\n');
-    const headers = rows[0].split(',');
+    const headers = rows[0].split(',').map(header => header.trim());
     const result = [];
 
     for (let i = 1; i < rows.length; i++) {
-        const obj = {};
         const values = rows[i].split(',');
+        const obj = {};
         for (let j = 0; j < headers.length; j++) {
-            obj[headers[j].trim()] = values[j].trim();
+            obj[headers[j]] = values[j]?.trim() || ''; // undefinedの場合は空文字
         }
         result.push(obj);
     }
     return result;
 }
 
-// 入力されたユーザー情報に基づいてデータをフィルタリングする関数
-function filterData(data, prefecture, gender, ageRange) {
-    return data.filter(item => 
-        item.prefecture === prefecture && 
-        item.gender === gender && 
-        item.ageRange === ageRange
-    );
+async function loadAndDisplayData() {
+    for (const file of csvFiles) {
+        const data = await fetchAndParseCSV(`open_data/data/${file}`);
+        
+        // フィルタリングの前に条件を確認
+        console.log(`フィルタ条件: 都道府県=${prefecture}, 性別=${gender}, 年齢区分=${ageRange}`);
+
+        const filteredData = data.filter(item => {
+            return item['都道府県'] === prefecture && 
+                   item['性別'] === gender && 
+                   item['年齢区分'] === ageRange;
+        });
+
+        if (filteredData.length > 0) {
+            createHistogram(filteredData, file.split('.')[0]); // 拡張子を除いたファイル名を使用
+        }
+    }
 }
 
-// ヒストグラムを描画する関数
-function drawHistogram(ctx, filteredData, label) {
-    const values = filteredData.map(item => parseInt(item[label]));
-    const histogramData = {};
+// データを読み込み、表示する
+loadAndDisplayData();
 
-    // ヒストグラムデータの生成
-    values.forEach(value => {
-        histogramData[value] = (histogramData[value] || 0) + 1;
+// 検査値範囲から開始値を取得するヘルパー関数
+function parseRangeStart(range) {
+    // "150未満" -> 149
+    const lessThanMatch = range.match(/(\d+(\.\d+)?)未満/);
+    if (lessThanMatch) {
+        return parseFloat(lessThanMatch[1]) - 0.1; // 比較のため、0.1を引く
+    }
+    
+    // "150以上" -> 150
+    const moreThanMatch = range.match(/(\d+(\.\d+)?)以上/);
+    if (moreThanMatch) {
+        return parseFloat(moreThanMatch[1]);
+    }
+
+    // "150-200" -> 150
+    const rangeMatch = range.match(/(\d+(\.\d+)?)\-/);
+    if (rangeMatch) {
+        return parseFloat(rangeMatch[1]);
+    }
+
+    // デフォルトは0（数値が見つからなかった場合）
+    return 0;
+}
+
+function createHistogram(data, fileName) {
+    const ctx = document.getElementById(`${fileName}Histogram`).getContext('2d');
+
+    // 検査値範囲を昇順にソートする
+    const sortedData = data.sort((a, b) => {
+        const aRangeStart = parseRangeStart(a['検査値範囲']);
+        const bRangeStart = parseRangeStart(b['検査値範囲']);
+        return aRangeStart - bRangeStart;
     });
 
-    // ヒストグラム描画のためのデータ準備
-    const labels = Object.keys(histogramData);
-    const data = Object.values(histogramData);
+    const labels = [];
+    const values = [];
+
+    // ソートされたデータをラベルと値に分ける
+    sortedData.forEach(item => {
+        labels.push(item['検査値範囲']);
+        values.push(parseInt(item['人数']) || 0); // 人数が空の場合は0に設定
+    });
+
+    const chartData = {
+        labels: labels,
+        datasets: [{
+            label: '人数',
+            data: values,
+            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1
+        }]
+    };
 
     new Chart(ctx, {
         type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: `${label}のヒストグラム`,
-                data: data,
-                backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1,
-            }]
-        },
+        data: chartData,
         options: {
             scales: {
                 y: {
@@ -134,27 +187,6 @@ function drawHistogram(ctx, filteredData, label) {
     });
 }
 
-// メイン処理
-(async function() {
-    const data = await fetchData();
-    const prefecture = localStorage.getItem('prefecture') || '不明';
-    const gender = localStorage.getItem('gender') || '不明';
-    const birthdate = localStorage.getItem('birthdate') || '不明';
-    const age = calculateAge(birthdate);
-    const ageRange = getAgeRange(age);
-    
-    // フィルタリング
-    const filteredData = filterData(data, prefecture, gender, ageRange);
-
-    // ヒストグラムを描画
-    drawHistogram(document.getElementById('maxBloodPressureHistogram').getContext('2d'), filteredData, 'maxBloodPressure');
-    drawHistogram(document.getElementById('minBloodPressureHistogram').getContext('2d'), filteredData, 'minBloodPressure');
-    drawHistogram(document.getElementById('triglyceridesHistogram').getContext('2d'), filteredData, 'triglycerides');
-    drawHistogram(document.getElementById('hdlHistogram').getContext('2d'), filteredData, 'hdl');
-    drawHistogram(document.getElementById('ldlHistogram').getContext('2d'), filteredData, 'ldl');
-    drawHistogram(document.getElementById('hba1cHistogram').getContext('2d'), filteredData, 'hba1c');
-    drawHistogram(document.getElementById('fastingBloodSugarHistogram').getContext('2d'), filteredData, 'fastingBloodSugar');
-})();
 
 
 
@@ -164,79 +196,14 @@ function drawHistogram(ctx, filteredData, label) {
 
 
 
+const maxBloodPressure = parseInt(localStorage.getItem('maxBloodPressure')) || 0;
+const minBloodPressure = parseInt(localStorage.getItem('minBloodPressure')) || 0;
+const triglycerides = parseInt(localStorage.getItem('triglycerides')) || 0;
+const hdl = parseInt(localStorage.getItem('hdl')) || 0;
+const ldl = parseInt(localStorage.getItem('ldl')) || 0;
+const hba1c = parseFloat(localStorage.getItem('hba1c')) || 0;
+const fastingBloodSugar = parseInt(localStorage.getItem('fastingBloodSugar')) || 0;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// グラフを描画する関数
-function createChart(ctx, userScore, normal, caution, abnormal, label) {
-    const data = {
-        labels: [label],
-        datasets: [
-            {
-                label: '自分のスコア',
-                data: [userScore],
-                backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1,
-                type: 'bar'
-            },
-            {
-                label: '基準値 (正常)',
-                data: [normal],
-                backgroundColor: 'rgba(0, 255, 0, 0.3)',
-                type: 'line'
-            },
-            {
-                label: '基準値 (要注意)',
-                data: [caution],
-                backgroundColor: 'rgba(255, 255, 0, 0.3)',
-                type: 'line'
-            },
-            {
-                label: '基準値 (異常)',
-                data: [abnormal],
-                backgroundColor: 'rgba(255, 0, 0, 0.3)',
-                type: 'line'
-            },
-        ]
-    };
-
-    new Chart(ctx, {
-        type: 'bar',
-        data: data,
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    min: 0,
-                    max: Math.max(Math.round(abnormal + 10), Math.round(abnormal * 1.2)) // 基準値よりも少し高く設定
-                }
-            }
-        }
-    });
-}
-
-// 各項目ごとにグラフを作成
-createChart(document.getElementById('maxBloodPressureChart').getContext('2d'), maxBloodPressure, standards.maxBloodPressure.normal, standards.maxBloodPressure.caution, standards.maxBloodPressure.abnormal, '最大血圧');
-createChart(document.getElementById('minBloodPressureChart').getContext('2d'), minBloodPressure, standards.minBloodPressure.normal, standards.minBloodPressure.caution, standards.minBloodPressure.abnormal, '最小血圧');
-createChart(document.getElementById('triglyceridesChart').getContext('2d'), triglycerides, standards.triglycerides.normal, standards.triglycerides.caution, standards.triglycerides.abnormal, '中性脂肪');
-createChart(document.getElementById('hdlChart').getContext('2d'), hdl, standards.hdl.normal, standards.hdl.caution, standards.hdl.abnormal, 'HDL-C');
-createChart(document.getElementById('ldlChart').getContext('2d'), ldl, standards.ldl.normal, standards.ldl.caution, standards.ldl.abnormal, 'LDL-C');
-createChart(document.getElementById('hba1cChart').getContext('2d'), hba1c, standards.hba1c.normal, standards.hba1c.caution, standards.hba1c.abnormal, 'HbA1c');
-createChart(document.getElementById('fastingBloodSugarChart').getContext('2d'), fastingBloodSugar, standards.fastingBloodSugar.normal, standards.fastingBloodSugar.caution, standards.fastingBloodSugar.abnormal, '空腹時血糖');
 
 // 簡単なアドバイスを表示
 const adviceElement_HBP = document.getElementById('advice_HBP');
