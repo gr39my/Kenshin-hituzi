@@ -19,7 +19,11 @@ function calculateAge(birthdate) {
 
 // 年齢範囲を決定する関数
 function getAgeRange(age) {
-    if (age >= 40 && age <= 44) {
+    if (age < 40) {
+        return '40～44歳'; // 40歳未満は40～44歳のデータと比較
+    } else if (age >= 75) {
+        return '70～74歳'; // 75歳以上は70～74歳のデータと比較
+    } else if (age >= 40 && age <= 44) {
         return '40～44歳';
     } else if (age >= 45 && age <= 49) {
         return '45～49歳';
@@ -38,6 +42,7 @@ function getAgeRange(age) {
     }
 }
 
+
 // 比較メッセージを生成する
 const ageRange = getAgeRange(age);
 const comparisonMessage = `${prefecture}かつ${gender}かつ${ageRange}との比較`;
@@ -45,14 +50,17 @@ document.getElementById('comparisonMessage').textContent = comparisonMessage;
 
 // 基準値
 const standards = {
-    maxBloodPressure: { normal: 120, caution: 139, abnormal: 140 },
-    minBloodPressure: { normal: 80, caution: 89, abnormal: 90 },
-    triglycerides: { normal: 150, caution: 199, abnormal: 200 },
-    hdl: { normal: 60, caution: 59, abnormal: 39 },
-    ldl: { normal: 100, caution: 159, abnormal: 160 },
-    hba1c: { normal: 5.6, caution: 6.4, abnormal: 6.5 },
-    fastingBloodSugar: { normal: 99, caution: 125, abnormal: 126 }
+    maxBloodPressure: { normal: 130, caution: 160, abnormal: 200 },
+    minBloodPressure: { normal: 85, caution: 100, abnormal: 200 },
+    
+    hdl: { normal: 30, caution: 40, abnormal: 80 },
+    ldl: { normal: 120, caution: 180, abnormal: 200 },
+    triglycerides: { normal: 150, caution: 500, abnormal: 2000 },
+
+    hba1c: { normal: 5.6, caution: 6.5, abnormal: 12.0 },
+    fastingBloodSugar: { normal: 100, caution: 126, abnormal: 200 }
 };
+
 
 // 各CSVファイル名をリスト化
 const csvFiles = [
@@ -101,7 +109,7 @@ async function fetchAndParseCSV(url) {
 async function loadAndDisplayData() {
     for (const file of csvFiles) {
         const data = await fetchAndParseCSV(`open_data/data/${file}`);
-        
+
         // フィルタリングの前に条件を確認
         console.log(`フィルタ条件: 都道府県=${prefecture}, 性別=${gender}, 年齢区分=${ageRange}`);
 
@@ -111,56 +119,130 @@ async function loadAndDisplayData() {
                    item['年齢区分'] === ageRange;
         });
 
+        // デバッグ用
+        console.log('フィルタ後のデータ:', filteredData);
+
         if (filteredData.length > 0) {
             createHistogram(filteredData, file.split('.')[0]); // 拡張子を除いたファイル名を使用
         }
     }
 }
 
-// データを読み込み、表示する
-loadAndDisplayData();
 
 // 検査値範囲から開始値を取得するヘルパー関数
-function parseRangeStart(range) {
-    // "150未満" -> 149
-    const lessThanMatch = range.match(/(\d+(\.\d+)?)未満/);
-    if (lessThanMatch) {
-        return parseFloat(lessThanMatch[1]) - 0.1; // 比較のため、0.1を引く
-    }
-    
-    // "150以上" -> 150
-    const moreThanMatch = range.match(/(\d+(\.\d+)?)以上/);
-    if (moreThanMatch) {
-        return parseFloat(moreThanMatch[1]);
-    }
+function parseRangeStart(value) {
+    return parseFloat(value) || 0; // 数値が見つからなかった場合、0を返す
+}
 
-    // "150-200" -> 150
-    const rangeMatch = range.match(/(\d+(\.\d+)?)\-/);
-    if (rangeMatch) {
-        return parseFloat(rangeMatch[1]);
-    }
+// 検査値範囲から終了値を取得するヘルパー関数
+function parseRangeEnd(value) {
+    return value === 'inf' ? Infinity : parseFloat(value) || 0; // "inf"はInfinityとして扱う
+}
 
-    // デフォルトは0（数値が見つからなかった場合）
-    return 0;
+
+
+// "あなた"と"▼"を表示するカスタムプラグイン
+const arrowPlugin = {
+    id: 'customArrow',
+    afterDatasetsDraw(chart, args, options) {
+        const { ctx, scales } = chart;
+        const userValue = options.userValue;  // ユーザーの値を取得
+        const x = scales.x;  // X軸
+        const y = scales.y;  // Y軸
+
+        // ユーザーの値に対応するX座標を計算
+        let userPositionX = null;
+
+        chart.data.labels.forEach((label, index) => {
+            const [rangeStart, rangeEnd] = label.split(' - ').map(v => parseFloat(v));
+            
+            // rangeEnd が Infinity の場合に適切に処理する
+            if (userValue >= rangeStart && (isNaN(rangeEnd) || userValue <= rangeEnd)) {
+                userPositionX = x.getPixelForValue(index);  // X軸の位置を取得
+            }
+        });
+
+        // ユーザー位置が見つかった場合にのみ描画
+        if (userPositionX !== null) {
+            const labelOffset = 15;  // "あなた"の表示位置調整
+            const arrowHeight = 15;  // ▼ の高さ
+
+            // "あなた" の描画
+            ctx.font = '14px Arial';
+            ctx.fillStyle = 'black';
+            ctx.fillText('あなた', userPositionX, y.top + labelOffset);
+
+            // "▼" の描画 (上から下向き)
+            ctx.font = '16px Arial';
+            ctx.fillStyle = 'red';
+            ctx.textAlign = 'center';
+            ctx.fillText('▼', userPositionX, y.top + arrowHeight + arrowHeight);
+        }
+    }
+};
+
+
+
+// ファイル名をstandardsのキーに変換する関数
+function getStandardKey(fileName) {
+    switch (fileName) {
+        case '拡張期血圧': return 'minBloodPressure';
+        case '収縮期血圧': return 'maxBloodPressure';
+        case '中性脂肪': return 'triglycerides';
+        case 'LDL-C': return 'ldl';
+        case 'HDL-C': return 'hdl';
+        case 'HbA1C': return 'hba1c';
+        case '空腹時血糖': return 'fastingBloodSugar';
+        default: return null; // 対応するキーがない場合はnullを返す
+    }
 }
 
 function createHistogram(data, fileName) {
     const ctx = document.getElementById(`${fileName}Histogram`).getContext('2d');
 
-    // 検査値範囲を昇順にソートする
+    const standardKey = getStandardKey(fileName);
+    if (!standardKey || !standards[standardKey]) {
+        console.error(`基準値が見つかりません: ${fileName}`);
+        return;
+    }
+
     const sortedData = data.sort((a, b) => {
-        const aRangeStart = parseRangeStart(a['検査値範囲']);
-        const bRangeStart = parseRangeStart(b['検査値範囲']);
-        return aRangeStart - bRangeStart;
+        const aLower = parseRangeStart(a['下限値']);
+        const bLower = parseRangeStart(b['下限値']);
+        return aLower - bLower;
     });
 
     const labels = [];
     const values = [];
+    const backgroundColors = [];
 
-    // ソートされたデータをラベルと値に分ける
     sortedData.forEach(item => {
-        labels.push(item['検査値範囲']);
-        values.push(parseInt(item['人数']) || 0); // 人数が空の場合は0に設定
+        const rangeLabel = `${item['下限値']} - ${item['上限値'] === 'inf' ? '∞' : item['上限値']}`;
+        labels.push(rangeLabel);
+        values.push(parseInt(item['人数']) || 0);
+
+        const lowerLimit = parseRangeStart(item['下限値']);
+        const upperLimit = parseRangeEnd(item['上限値']);
+
+        // HDL-Cの色付けロジックを修正
+        if (fileName === 'HDL-C') {
+            if (lowerLimit < standards[standardKey].normal) {
+                backgroundColors.push('rgba(255, 99, 132, 0.5)'); // 異常: 赤色系
+            } else if (lowerLimit < standards[standardKey].caution) {
+                backgroundColors.push('rgba(255, 205, 86, 0.5)'); // 要注意: 黄色系
+            } else {
+                backgroundColors.push('rgba(75, 192, 192, 0.5)'); // 健康域: 青色系
+            }
+        } else {
+            // HDL-C以外の色付けロジックはそのまま
+            if (upperLimit <= standards[standardKey].normal) {
+                backgroundColors.push('rgba(75, 192, 192, 0.5)'); // 健康域: 青色系
+            } else if (upperLimit <= standards[standardKey].caution) {
+                backgroundColors.push('rgba(255, 205, 86, 0.5)'); // 注意域: 黄色系
+            } else {
+                backgroundColors.push('rgba(255, 99, 132, 0.5)'); // 精密検査域: 赤色系
+            }
+        }
     });
 
     const chartData = {
@@ -168,24 +250,66 @@ function createHistogram(data, fileName) {
         datasets: [{
             label: '人数',
             data: values,
-            backgroundColor: 'rgba(75, 192, 192, 0.5)',
-            borderColor: 'rgba(75, 192, 192, 1)',
+            backgroundColor: backgroundColors,
+            borderColor: 'rgba(75, 75, 75, 1)',
             borderWidth: 1
         }]
+    };
+
+    const userValue = getUserValue(fileName); // ユーザーの値を取得
+    const chartOptions = {
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            customArrow: {
+                userValue: userValue  // ユーザーの値を渡す
+            }
+        }
     };
 
     new Chart(ctx, {
         type: 'bar',
         data: chartData,
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
+        options: chartOptions,
+        plugins: [arrowPlugin]  // カスタムプラグインを追加
     });
 }
+
+
+// ユーザーの値を取得する関数
+function getUserValue(fileName) {
+    switch (fileName) {
+        case '拡張期血圧':
+            return minBloodPressure;  // 例: 最小血圧
+        case '収縮期血圧':
+            return maxBloodPressure;  // 例: 最大血圧
+        case '中性脂肪':
+            return triglycerides;     // 例: 中性脂肪
+        case 'LDL-C':
+            return ldl;               // 例: LDLコレステロール
+        case 'HDL-C':
+            return hdl;               // 例: HDLコレステロール
+        case 'HbA1C':
+            return hba1c;             // 例: HbA1c
+        case '空腹時血糖':
+            return fastingBloodSugar;  // 例: 空腹時血糖
+        default:
+            return null;              // デフォルトはnull
+    }
+}
+
+
+
+
+
+
+// データを読み込み、表示する
+loadAndDisplayData();
+
+
 
 
 
@@ -210,57 +334,305 @@ const adviceElement_HBP = document.getElementById('advice_HBP');
 const adviceElement_HL = document.getElementById('advice_HL');
 const adviceElement_DM = document.getElementById('advice_DM');
 
-if (maxBloodPressure > standards.maxBloodPressure.abnormal) {
-    adviceElement_HBP.innerHTML += '<p>最大血圧が異常です。医師に相談してください。</p>';
-} else if (maxBloodPressure > standards.maxBloodPressure.caution) {
-    adviceElement_HBP.innerHTML += '<p>最大血圧が要注意です。健康管理に気をつけましょう。</p>';
-}else {
-    adviceElement_HBP.innerHTML += '<p>最大血圧は正常です。健康を維持しましょう。</p>';
+// 血圧の状態を評価する関数
+function evaluateBloodPressure() {
+    let systolicStatus = '';  // 収縮期血圧の状態
+    let diastolicStatus = ''; // 拡張期血圧の状態
+
+    // 収縮期血圧（最大血圧）の評価
+    if (maxBloodPressure > standards.maxBloodPressure.caution) {
+        systolicStatus = 'abnormal';
+    } else if (maxBloodPressure > standards.maxBloodPressure.normal) {
+        systolicStatus = 'caution';
+    } else {
+        systolicStatus = 'normal';
+    }
+
+    // 拡張期血圧（最小血圧）の評価
+    if (minBloodPressure > standards.minBloodPressure.caution) {
+        diastolicStatus = 'abnormal';
+    } else if (minBloodPressure > standards.minBloodPressure.normal) {
+        diastolicStatus = 'caution';
+    } else {
+        diastolicStatus = 'normal';
+    }
+
+    return { systolicStatus, diastolicStatus };
 }
 
-if (minBloodPressure < standards.minBloodPressure.abnormal) {
-    adviceElement_HBP.innerHTML += '<p>最小血圧が異常です。医師に相談してください。</p>';
-} else if (minBloodPressure > standards.minBloodPressure.caution) {
-    adviceElement_HBP.innerHTML += '<p>最小血圧が要注意です。健康管理に気をつけましょう。</p>';
-} else {
-    adviceElement_HBP.innerHTML += '<p>最小血圧は正常です。健康を維持しましょう。</p>';
+// アドバイスを表示する関数
+function displayBloodPressureAdvice() {
+    const { systolicStatus, diastolicStatus } = evaluateBloodPressure();
+    let advice = '';
+
+    // 9パターンのコメントを設定
+    if (systolicStatus === 'normal' && diastolicStatus === 'normal') {
+        advice = '高血圧の心配はないメェ。健康だメェ';
+    } else if (systolicStatus === 'caution' && diastolicStatus === 'normal') {
+        advice = '同年代と比べても、収縮期血圧が高めだメェ。<br>収縮期血圧を下げるには、塩分の摂取を控えたり、運動が効果的だメェ';
+    } else if (systolicStatus === 'normal' && diastolicStatus === 'caution') {
+        advice = '同年代と比べても、拡張期血圧が高めだメェ。拡張期血圧を下げるには、ストレス管理や睡眠が大事だメェ';
+    } else if (systolicStatus === 'abnormal' && diastolicStatus === 'normal') {
+        advice = '収縮期血圧は精密検査をした方がいいレベルだメェ。お医者さんにかかるのは当然として、塩分の摂取を減らしたり、有酸素運動が効果的だメェ';
+    } else if (systolicStatus === 'normal' && diastolicStatus === 'abnormal') {
+        advice = '拡張期血圧は精密検査をした方がいいレベルだメェ。お医者さんにかかるのは当然として、ストレスを減らすことが効果的だメェ';
+    } else if (systolicStatus === 'caution' && diastolicStatus === 'caution') {
+        advice = '収縮期血圧と拡張期血圧がともに高めだメェ。塩分を減らしたり、ストレスを管理して、健康を守ろうメェ';
+    } else if (systolicStatus === 'abnormal' && diastolicStatus === 'caution') {
+        advice = '収縮期血圧は危険域、拡張期血圧も注意域だメェ。すぐに医師に相談して、生活習慣の改善が必要だメェ';
+    } else if (systolicStatus === 'caution' && diastolicStatus === 'abnormal') {
+        advice = '拡張期血圧は精密検査が必要だメェ。収縮期血圧も要注意なので、早めの対応を心がけるメェ';
+    } else if (systolicStatus === 'abnormal' && diastolicStatus === 'abnormal') {
+        advice = '収縮期血圧も拡張期血圧も危険域だメェ。直ちに医師の診断を受けて、生活習慣を見直すメェ';
+    }
+
+    // アドバイスを表示
+    adviceElement_HBP.innerHTML = `<p>${advice}</p>`;
 }
 
-if (triglycerides > standards.triglycerides.abnormal) {
-    adviceElement_HL.innerHTML += '<p>中性脂肪が異常です。医師に相談してください。</p>';
-} else if (triglycerides > standards.triglycerides.caution) {
-    adviceElement_HL.innerHTML += '<p>中性脂肪が要注意です。食生活を見直しましょう。</p>';
-} else {
-    adviceElement_HL.innerHTML += '<p>中性脂肪は正常です。健康を維持しましょう。</p>';
+// アドバイスを表示
+displayBloodPressureAdvice();
+
+
+
+
+function evaluateLipidLevels() {
+    let hdlStatus = '';   // HDL-Cの状態
+    let ldlStatus = '';   // LDL-Cの状態
+    let tgStatus = '';    // 中性脂肪の状態
+
+    // HDL-Cの評価
+    if (hdl < standards.hdl.caution) {
+        hdlStatus = 'abnormal';
+    } else if (hdl < standards.hdl.normal) {
+        hdlStatus = 'caution';
+    } else {
+        hdlStatus = 'normal';
+    }
+
+    // LDL-Cの評価
+    if (ldl > standards.ldl.caution) {
+        ldlStatus = 'abnormal';
+    } else if (ldl > standards.ldl.normal) {
+        ldlStatus = 'caution';
+    } else {
+        ldlStatus = 'normal';
+    }
+
+    // 中性脂肪（トリグリセリド）の評価
+    if (triglycerides > standards.triglycerides.caution) {
+        tgStatus = 'abnormal';
+    } else if (triglycerides > standards.triglycerides.normal) {
+        tgStatus = 'caution';
+    } else {
+        tgStatus = 'normal';
+    }
+
+    return { hdlStatus, ldlStatus, tgStatus };
 }
-if (hdl < standards.hdl.abnormal) {
-    adviceElement_HL.innerHTML += '<p>HDL-Cが異常です。医師に相談してください。</p>';
-} else if (hdl < standards.hdl.caution) {
-    adviceElement_HL.innerHTML += '<p>HDL-Cが要注意です。運動を増やしましょう。</p>';
-} else {
-    adviceElement_HL.innerHTML += '<p>HDL-Cは正常です。引き続き健康を維持しましょう。</p>';
+
+function displayLipidAdvice() {
+    let { hdlStatus, ldlStatus, tgStatus } = evaluateLipidLevels();
+    let advice = '';
+
+    // すべてが正常
+    if (hdlStatus === 'normal' && ldlStatus === 'normal' && tgStatus === 'normal') {
+        advice = '脂質の問題はないメェ。引き続き健康を維持しましょうメェ！';
+    }
+    // HDL-Cが要注意
+    else if (hdlStatus === 'caution' && ldlStatus === 'normal' && tgStatus === 'normal') {
+        advice = 'HDL-Cがやや低めだメェ。運動を増やして、健康を維持しましょうメェ！';
+    }
+    // LDL-Cが要注意
+    else if (hdlStatus === 'normal' && ldlStatus === 'caution' && tgStatus === 'normal') {
+        advice = 'LDL-Cが少し高めだメェ。食事に気をつけてくださいメェ！';
+    }
+    // 中性脂肪が要注意
+    else if (hdlStatus === 'normal' && ldlStatus === 'normal' && tgStatus === 'caution') {
+        advice = '中性脂肪がやや高めだメェ。食生活に気をつけましょうメェ！';
+    }
+    // HDL-Cが異常
+    else if (hdlStatus === 'abnormal' && ldlStatus === 'normal' && tgStatus === 'normal') {
+        advice = 'HDL-Cが低すぎるメェ。医師に相談してくださいメェ！';
+    }
+    // LDL-Cが異常
+    else if (hdlStatus === 'normal' && ldlStatus === 'abnormal' && tgStatus === 'normal') {
+        advice = 'LDL-Cが高いメェ。医師に相談して、食事を見直しましょうメェ！';
+    }
+    // 中性脂肪が異常
+    else if (hdlStatus === 'normal' && ldlStatus === 'normal' && tgStatus === 'abnormal') {
+        advice = '中性脂肪が高すぎるメェ。医師に相談してくださいメェ！';
+    }
+
+    // HDL-C要注意 + LDL-C要注意
+    else if (hdlStatus === 'caution' && ldlStatus === 'caution' && tgStatus === 'normal') {
+        advice = 'HDL-CとLDL-Cがどちらも要注意だメェ。運動や食事に注意しましょうメェ！';
+    }
+    // HDL-C要注意 + 中性脂肪要注意
+    else if (hdlStatus === 'caution' && ldlStatus === 'normal' && tgStatus === 'caution') {
+        advice = 'HDL-Cと中性脂肪がどちらも要注意だメェ。運動と食生活を見直しましょうメェ！';
+    }
+    // LDL-C要注意 + 中性脂肪要注意
+    else if (hdlStatus === 'normal' && ldlStatus === 'caution' && tgStatus === 'caution') {
+        advice = 'LDL-Cと中性脂肪がどちらも高めだメェ。生活習慣の改善を考えましょうメェ！';
+    }
+    // HDL-C異常 + LDL-C異常
+    else if (hdlStatus === 'abnormal' && ldlStatus === 'abnormal' && tgStatus === 'normal') {
+        advice = 'HDL-CとLDL-Cが異常だメェ。すぐに医師に相談してくださいメェ！';
+    }
+    // HDL-C異常 + 中性脂肪異常
+    else if (hdlStatus === 'abnormal' && ldlStatus === 'normal' && tgStatus === 'abnormal') {
+        advice = 'HDL-Cと中性脂肪が異常だメェ。医師に相談し、改善策を考えましょうメェ！';
+    }
+    // LDL-C異常 + 中性脂肪異常
+    else if (hdlStatus === 'normal' && ldlStatus === 'abnormal' && tgStatus === 'abnormal') {
+        advice = 'LDL-Cと中性脂肪が異常だメェ。医師に相談し、生活改善が必要だメェ！';
+    }
+
+    // HDL-C要注意 + LDL-C異常
+    else if (hdlStatus === 'caution' && ldlStatus === 'abnormal' && tgStatus === 'normal') {
+        advice = 'HDL-Cがやや低めで、LDL-Cが異常だメェ。運動を増やして、医師に相談しましょうメェ！';
+    }
+    // HDL-C要注意 + 中性脂肪異常
+    else if (hdlStatus === 'caution' && ldlStatus === 'normal' && tgStatus === 'abnormal') {
+        advice = 'HDL-Cがやや低めで、中性脂肪が異常だメェ。運動を増やして、医師に相談しましょうメェ！';
+    }
+    // LDL-C要注意 + 中性脂肪異常
+    else if (hdlStatus === 'normal' && ldlStatus === 'caution' && tgStatus === 'abnormal') {
+        advice = 'LDL-Cがやや高めで、中性脂肪が異常だメェ。食事の改善と医師に相談が必要だメェ！';
+    }
+
+    // HDL-C異常 + LDL-C要注意
+    else if (hdlStatus === 'abnormal' && ldlStatus === 'caution' && tgStatus === 'normal') {
+        advice = 'HDL-Cが異常で、LDL-Cがやや高めだメェ。医師に相談して、食生活を見直しましょうメェ！';
+    }
+    // HDL-C異常 + 中性脂肪要注意
+    else if (hdlStatus === 'abnormal' && ldlStatus === 'normal' && tgStatus === 'caution') {
+        advice = 'HDL-Cが異常で、中性脂肪がやや高めだメェ。医師に相談し、生活習慣を見直しましょうメェ！';
+    }
+    // LDL-C異常 + 中性脂肪要注意
+    else if (hdlStatus === 'normal' && ldlStatus === 'abnormal' && tgStatus === 'caution') {
+        advice = 'LDL-Cが異常で、中性脂肪がやや高めだメェ。医師に相談し、食事の改善をしましょうメェ！';
+    }
+
+    // HDL-C要注意 + LDL-C要注意 + 中性脂肪異常
+    else if (hdlStatus === 'caution' && ldlStatus === 'caution' && tgStatus === 'abnormal') {
+        advice = 'HDL-CとLDL-Cが要注意で、中性脂肪が異常だメェ。生活習慣を改善して、医師に相談しましょうメェ！';
+    }
+    // HDL-C異常 + LDL-C要注意 + 中性脂肪要注意
+    else if (hdlStatus === 'abnormal' && ldlStatus === 'caution' && tgStatus === 'caution') {
+        advice = 'HDL-Cが異常で、LDL-Cと中性脂肪がやや高めだメェ。医師に相談して、生活習慣を見直しましょうメェ！';
+    }
+    // HDL-C要注意 + LDL-C異常 + 中性脂肪要注意
+    else if (hdlStatus === 'caution' && ldlStatus === 'abnormal' && tgStatus === 'caution') {
+        advice = 'HDL-Cがやや低めで、LDL-Cが異常、中性脂肪がやや高めだメェ。医師に相談して、運動と食事の改善が必要だメェ！';
+    }
+
+    // すべてが異常
+    else if (hdlStatus === 'abnormal' && ldlStatus === 'abnormal' && tgStatus === 'abnormal') {
+        advice = 'HDL-C、LDL-C、中性脂肪のすべてが異常だメェ。すぐに医師に相談してくださいメェ！';
+    }
+
+    // アドバイスを表示
+    adviceElement_HL.innerHTML = '<p>' + advice + '</p>';
 }
-if (ldl > standards.ldl.abnormal) {
-    adviceElement_HL.innerHTML += '<p>LDL-Cが異常です。医師に相談してください。</p>';
-} else if (ldl > standards.ldl.caution) {
-    adviceElement_HL.innerHTML += '<p>LDL-Cが要注意です。食事を見直しましょう。</p>';
-} else {
-    adviceElement_HL.innerHTML += '<p>LDL-Cは正常です。健康を維持しましょう。</p>';
+
+displayLipidAdvice();
+
+
+
+
+function evaluateDiabetesLevels() {
+    let hba1cStatus = '';   // HbA1cの状態
+    let fastingBloodSugarStatus = '';   // 空腹時血糖の状態
+
+    // HbA1cの評価
+    if (hba1c > standards.hba1c.abnormal) {
+        hba1cStatus = 'abnormal';
+    } else if (hba1c > standards.hba1c.caution) {
+        hba1cStatus = 'caution';
+    } else {
+        hba1cStatus = 'normal';
+    }
+
+    // 空腹時血糖の評価
+    if (fastingBloodSugar > standards.fastingBloodSugar.abnormal) {
+        fastingBloodSugarStatus = 'abnormal';
+    } else if (fastingBloodSugar > standards.fastingBloodSugar.caution) {
+        fastingBloodSugarStatus = 'caution';
+    } else {
+        fastingBloodSugarStatus = 'normal';
+    }
+
+    return { hba1cStatus, fastingBloodSugarStatus };
 }
 
 
-if (hba1c > standards.hba1c.abnormal) {
-    adviceElement_DM.innerHTML += '<p>HbA1cが異常です。医師に相談してください。</p>';
-} else if (hba1c > standards.hba1c.caution) {
-    adviceElement_DM.innerHTML += '<p>HbA1cが要注意です。健康管理に気をつけましょう。</p>';
-} else {
-    adviceElement_DM.innerHTML += '<p>HbA1cは正常です。引き続き健康を維持しましょう。</p>';
-}
-if (fastingBloodSugar > standards.fastingBloodSugar.abnormal) {
-    adviceElement_DM.innerHTML += '<p>空腹時血糖が異常です。医師に相談してください。</p>';
-} else if (fastingBloodSugar > standards.fastingBloodSugar.caution) {
-    adviceElement_DM.innerHTML += '<p>空腹時血糖が要注意です。健康管理に気をつけましょう。</p>';
-} else {
-    adviceElement_DM.innerHTML += '<p>空腹時血糖は正常です。健康を維持しましょう。</p>';
+
+function displayDiabetesAdvice() {
+    let hba1cStatus = '';  // HbA1cの状態
+    let fastingBloodSugarStatus = '';  // 空腹時血糖の状態
+
+    // HbA1cの評価
+    if (hba1c > standards.hba1c.abnormal) {
+        hba1cStatus = 'abnormal';
+    } else if (hba1c > standards.hba1c.caution) {
+        hba1cStatus = 'caution';
+    } else {
+        hba1cStatus = 'normal';
+    }
+
+    // 空腹時血糖の評価
+    if (fastingBloodSugar > standards.fastingBloodSugar.abnormal) {
+        fastingBloodSugarStatus = 'abnormal';
+    } else if (fastingBloodSugar > standards.fastingBloodSugar.caution) {
+        fastingBloodSugarStatus = 'caution';
+    } else {
+        fastingBloodSugarStatus = 'normal';
+    }
+
+    let advice = '';
+
+    // すべてが正常
+    if (hba1cStatus === 'normal' && fastingBloodSugarStatus === 'normal') {
+        advice = '糖尿病の心配はないメェ。引き続き健康を維持しましょうメェ！';
+    }
+    // HbA1cが要注意で、空腹時血糖が正常
+    else if (hba1cStatus === 'caution' && fastingBloodSugarStatus === 'normal') {
+        advice = 'HbA1cがやや高めだメェ。生活習慣に気をつけて、血糖値を安定させましょうメェ！';
+    }
+    // 空腹時血糖が要注意で、HbA1cが正常
+    else if (hba1cStatus === 'normal' && fastingBloodSugarStatus === 'caution') {
+        advice = '空腹時血糖がやや高めだメェ。食生活に気をつけましょうメェ！';
+    }
+    // HbA1cが異常で、空腹時血糖が正常
+    else if (hba1cStatus === 'abnormal' && fastingBloodSugarStatus === 'normal') {
+        advice = 'HbA1cが高いメェ。医師に相談してくださいメェ！';
+    }
+    // 空腹時血糖が異常で、HbA1cが正常
+    else if (hba1cStatus === 'normal' && fastingBloodSugarStatus === 'abnormal') {
+        advice = '空腹時血糖が高いメェ。医師に相談してくださいメェ！';
+    }
+    // HbA1cが要注意で、空腹時血糖も要注意
+    else if (hba1cStatus === 'caution' && fastingBloodSugarStatus === 'caution') {
+        advice = 'HbA1cと空腹時血糖がどちらも要注意だメェ。生活習慣を改善しましょうメェ！';
+    }
+    // HbA1cが異常で、空腹時血糖が要注意
+    else if (hba1cStatus === 'abnormal' && fastingBloodSugarStatus === 'caution') {
+        advice = 'HbA1cが異常で、空腹時血糖もやや高めだメェ。医師に相談して、改善策を見つけましょうメェ！';
+    }
+    // 空腹時血糖が異常で、HbA1cが要注意
+    else if (hba1cStatus === 'caution' && fastingBloodSugarStatus === 'abnormal') {
+        advice = '空腹時血糖が異常で、HbA1cもやや高めだメェ。医師に相談して、改善策を考えましょうメェ！';
+    }
+    // どちらも異常
+    else if (hba1cStatus === 'abnormal' && fastingBloodSugarStatus === 'abnormal') {
+        advice = 'HbA1cと空腹時血糖のどちらも異常だメェ。すぐに医師に相談してくださいメェ！';
+    }
+
+    // アドバイスを表示
+    adviceElement_DM.innerHTML = '<p>' + advice + '</p>';
 }
 
+
+displayDiabetesAdvice();

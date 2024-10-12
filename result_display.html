@@ -6,7 +6,7 @@
     <title>健康診断結果</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>    
 </head>
 <body>
     <div class="container">
@@ -36,11 +36,11 @@
         </div>
 
         <h2>脂質異常症に関する項目</h2>
-
+        
         <div class="container-item">
-            <h3>中性脂肪</h3>
-            <p>中性脂肪は、体に必要なエネルギー源ですが、過剰になると心疾患のリスクが高まります。</p>
-            <canvas id="中性脂肪Histogram" width="400" height="200"></canvas>
+            <h3>HDL-C</h3>
+            <p>HDL-Cは、いわゆる「善玉コレステロール」で、血管内の余分なコレステロールを運び出します。正常値を維持することが重要です。</p>
+            <canvas id="HDL-CHistogram" width="400" height="200"></canvas>
         </div>
 
         <div class="container-item">
@@ -50,12 +50,10 @@
         </div>
 
         <div class="container-item">
-            <h3>HDL-C</h3>
-            <p>HDL-Cは、いわゆる「善玉コレステロール」で、血管内の余分なコレステロールを運び出します。正常値を維持することが重要です。</p>
-            <canvas id="HDL-CHistogram" width="400" height="200"></canvas>
-        </div>
-
-        
+            <h3>中性脂肪</h3>
+            <p>中性脂肪は、体に必要なエネルギー源ですが、過剰になると心疾患のリスクが高まります。</p>
+            <canvas id="中性脂肪Histogram" width="400" height="200"></canvas>
+        </div>        
 
         <div class="advice-container">
             <img src="hituzi.png" alt="Character" class="bubble-image">
