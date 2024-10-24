@@ -301,20 +301,17 @@ function getUserValue(fileName) {
     }
 }
 
-
-
-
-
-
 // データを読み込み、表示する
 loadAndDisplayData();
 
-
-
-
-
-
-
+// グローバル変数として定義
+let systolicStatus = '';
+let diastolicStatus = '';
+let hdlStatus = '';
+let ldlStatus = '';
+let tgStatus = '';
+let hba1cStatus = '';
+let fastingBloodSugarStatus = '';
 
 
 
@@ -336,9 +333,6 @@ const adviceElement_DM = document.getElementById('advice_DM');
 
 // 血圧の状態を評価する関数
 function evaluateBloodPressure() {
-    let systolicStatus = '';  // 収縮期血圧の状態
-    let diastolicStatus = ''; // 拡張期血圧の状態
-
     // 収縮期血圧（最大血圧）の評価
     if (maxBloodPressure > standards.maxBloodPressure.caution) {
         systolicStatus = 'abnormal';
@@ -367,23 +361,23 @@ function displayBloodPressureAdvice() {
 
     // 9パターンのコメントを設定
     if (systolicStatus === 'normal' && diastolicStatus === 'normal') {
-        advice = '高血圧の心配はないメェ。健康だメェ';
+        advice = '高血圧の心配はないメェ。<br>健康だメェ';
     } else if (systolicStatus === 'caution' && diastolicStatus === 'normal') {
         advice = '同年代と比べても、収縮期血圧が高めだメェ。<br>収縮期血圧を下げるには、塩分の摂取を控えたり、運動が効果的だメェ';
     } else if (systolicStatus === 'normal' && diastolicStatus === 'caution') {
-        advice = '同年代と比べても、拡張期血圧が高めだメェ。拡張期血圧を下げるには、ストレス管理や睡眠が大事だメェ';
+        advice = '同年代と比べても、拡張期血圧が高めだメェ。<br>拡張期血圧を下げるには、ストレス管理や睡眠が大事だメェ';
     } else if (systolicStatus === 'abnormal' && diastolicStatus === 'normal') {
-        advice = '収縮期血圧は精密検査をした方がいいレベルだメェ。お医者さんにかかるのは当然として、塩分の摂取を減らしたり、有酸素運動が効果的だメェ';
+        advice = '収縮期血圧は精密検査をした方がいいレベルだメェ。<br>お医者さんにかかるのは当然として、塩分の摂取を減らしたり、有酸素運動が効果的だメェ';
     } else if (systolicStatus === 'normal' && diastolicStatus === 'abnormal') {
-        advice = '拡張期血圧は精密検査をした方がいいレベルだメェ。お医者さんにかかるのは当然として、ストレスを減らすことが効果的だメェ';
+        advice = '拡張期血圧は精密検査をした方がいいレベルだメェ。<br>お医者さんにかかるのは当然として、ストレスを減らすことが効果的だメェ';
     } else if (systolicStatus === 'caution' && diastolicStatus === 'caution') {
-        advice = '収縮期血圧と拡張期血圧がともに高めだメェ。塩分を減らしたり、ストレスを管理して、健康を守ろうメェ';
+        advice = '収縮期血圧と拡張期血圧がともに高めだメェ。<br>塩分を減らしたり、ストレスを管理して、健康を守ろうメェ';
     } else if (systolicStatus === 'abnormal' && diastolicStatus === 'caution') {
-        advice = '収縮期血圧は危険域、拡張期血圧も注意域だメェ。すぐに医師に相談して、生活習慣の改善が必要だメェ';
+        advice = '収縮期血圧は危険域、拡張期血圧も注意域だメェ。<br>すぐに医師に相談して、生活習慣の改善が必要だメェ';
     } else if (systolicStatus === 'caution' && diastolicStatus === 'abnormal') {
-        advice = '拡張期血圧は精密検査が必要だメェ。収縮期血圧も要注意なので、早めの対応を心がけるメェ';
+        advice = '拡張期血圧は精密検査が必要だメェ。<br>収縮期血圧も要注意なので、早めの対応を心がけるメェ';
     } else if (systolicStatus === 'abnormal' && diastolicStatus === 'abnormal') {
-        advice = '収縮期血圧も拡張期血圧も危険域だメェ。直ちに医師の診断を受けて、生活習慣を見直すメェ';
+        advice = '収縮期血圧も拡張期血圧も危険域だメェ。<br>直ちに医師の診断を受けて、生活習慣を見直すメェ';
     }
 
     // アドバイスを表示
@@ -397,9 +391,6 @@ displayBloodPressureAdvice();
 
 
 function evaluateLipidLevels() {
-    let hdlStatus = '';   // HDL-Cの状態
-    let ldlStatus = '';   // LDL-Cの状態
-    let tgStatus = '';    // 中性脂肪の状態
 
     // HDL-Cの評価
     if (hdl < standards.hdl.caution) {
@@ -431,106 +422,107 @@ function evaluateLipidLevels() {
     return { hdlStatus, ldlStatus, tgStatus };
 }
 
+
 function displayLipidAdvice() {
     let { hdlStatus, ldlStatus, tgStatus } = evaluateLipidLevels();
     let advice = '';
 
     // すべてが正常
     if (hdlStatus === 'normal' && ldlStatus === 'normal' && tgStatus === 'normal') {
-        advice = '脂質の問題はないメェ。引き続き健康を維持しましょうメェ！';
+        advice = '脂質の問題はないメェ。<br>健康だメェ。';
     }
     // HDL-Cが要注意
     else if (hdlStatus === 'caution' && ldlStatus === 'normal' && tgStatus === 'normal') {
-        advice = 'HDL-Cがやや低めだメェ。運動を増やして、健康を維持しましょうメェ！';
+        advice = 'HDL-Cがやや低めだメェ。<br>運動量を増やすと良いメェ。';
     }
     // LDL-Cが要注意
     else if (hdlStatus === 'normal' && ldlStatus === 'caution' && tgStatus === 'normal') {
-        advice = 'LDL-Cが少し高めだメェ。食事に気をつけてくださいメェ！';
+        advice = 'LDL-Cが少し高めだメェ。<br>食事に気をつけるメェ。';
     }
     // 中性脂肪が要注意
     else if (hdlStatus === 'normal' && ldlStatus === 'normal' && tgStatus === 'caution') {
-        advice = '中性脂肪がやや高めだメェ。食生活に気をつけましょうメェ！';
+        advice = '中性脂肪がやや高めだメェ。<br>食生活に気をつけるメェ！';
     }
     // HDL-Cが異常
     else if (hdlStatus === 'abnormal' && ldlStatus === 'normal' && tgStatus === 'normal') {
-        advice = 'HDL-Cが低すぎるメェ。医師に相談してくださいメェ！';
+        advice = 'HDL-Cが低すぎるメェ。<br>医師に相談するメェ！';
     }
     // LDL-Cが異常
     else if (hdlStatus === 'normal' && ldlStatus === 'abnormal' && tgStatus === 'normal') {
-        advice = 'LDL-Cが高いメェ。医師に相談して、食事を見直しましょうメェ！';
+        advice = 'LDL-Cが高いメェ。<br>医師に相談するメェ！';
     }
     // 中性脂肪が異常
     else if (hdlStatus === 'normal' && ldlStatus === 'normal' && tgStatus === 'abnormal') {
-        advice = '中性脂肪が高すぎるメェ。医師に相談してくださいメェ！';
+        advice = '中性脂肪が高すぎるメェ。<br>医師に相談するメェ！';
     }
 
     // HDL-C要注意 + LDL-C要注意
     else if (hdlStatus === 'caution' && ldlStatus === 'caution' && tgStatus === 'normal') {
-        advice = 'HDL-CとLDL-Cがどちらも要注意だメェ。運動や食事に注意しましょうメェ！';
+        advice = 'HDL-CとLDL-Cがどちらも要注意だメェ。<br>運動や食事に注意するメェ！';
     }
     // HDL-C要注意 + 中性脂肪要注意
     else if (hdlStatus === 'caution' && ldlStatus === 'normal' && tgStatus === 'caution') {
-        advice = 'HDL-Cと中性脂肪がどちらも要注意だメェ。運動と食生活を見直しましょうメェ！';
+        advice = 'HDL-Cと中性脂肪がどちらも要注意だメェ。<br>運動と食生活を見直すメェ！';
     }
     // LDL-C要注意 + 中性脂肪要注意
     else if (hdlStatus === 'normal' && ldlStatus === 'caution' && tgStatus === 'caution') {
-        advice = 'LDL-Cと中性脂肪がどちらも高めだメェ。生活習慣の改善を考えましょうメェ！';
+        advice = 'LDL-Cと中性脂肪がどちらも高めだメェ。<br>生活習慣の改善するメェ！';
     }
     // HDL-C異常 + LDL-C異常
     else if (hdlStatus === 'abnormal' && ldlStatus === 'abnormal' && tgStatus === 'normal') {
-        advice = 'HDL-CとLDL-Cが異常だメェ。すぐに医師に相談してくださいメェ！';
+        advice = 'HDL-CとLDL-Cが異常だメェ。<br>すぐに医師に相談するメェ！';
     }
     // HDL-C異常 + 中性脂肪異常
     else if (hdlStatus === 'abnormal' && ldlStatus === 'normal' && tgStatus === 'abnormal') {
-        advice = 'HDL-Cと中性脂肪が異常だメェ。医師に相談し、改善策を考えましょうメェ！';
+        advice = 'HDL-Cと中性脂肪が異常だメェ。<br>医師に相談するメェ！';
     }
     // LDL-C異常 + 中性脂肪異常
     else if (hdlStatus === 'normal' && ldlStatus === 'abnormal' && tgStatus === 'abnormal') {
-        advice = 'LDL-Cと中性脂肪が異常だメェ。医師に相談し、生活改善が必要だメェ！';
+        advice = 'LDL-Cと中性脂肪が異常だメェ。<br>医師に相談するメェ！';
     }
 
     // HDL-C要注意 + LDL-C異常
     else if (hdlStatus === 'caution' && ldlStatus === 'abnormal' && tgStatus === 'normal') {
-        advice = 'HDL-Cがやや低めで、LDL-Cが異常だメェ。運動を増やして、医師に相談しましょうメェ！';
+        advice = 'HDL-Cがやや低めで、LDL-Cが異常だメェ。<br>運動を増やして、医師に相談するメェ！';
     }
     // HDL-C要注意 + 中性脂肪異常
     else if (hdlStatus === 'caution' && ldlStatus === 'normal' && tgStatus === 'abnormal') {
-        advice = 'HDL-Cがやや低めで、中性脂肪が異常だメェ。運動を増やして、医師に相談しましょうメェ！';
+        advice = 'HDL-Cがやや低めで、中性脂肪が異常だメェ。<br>運動を増やして、医師に相談するメェ！';
     }
     // LDL-C要注意 + 中性脂肪異常
     else if (hdlStatus === 'normal' && ldlStatus === 'caution' && tgStatus === 'abnormal') {
-        advice = 'LDL-Cがやや高めで、中性脂肪が異常だメェ。食事の改善と医師に相談が必要だメェ！';
+        advice = 'LDL-Cがやや高めで、中性脂肪が異常だメェ。<br>食事の改善と医師に相談が必要だメェ！';
     }
 
     // HDL-C異常 + LDL-C要注意
     else if (hdlStatus === 'abnormal' && ldlStatus === 'caution' && tgStatus === 'normal') {
-        advice = 'HDL-Cが異常で、LDL-Cがやや高めだメェ。医師に相談して、食生活を見直しましょうメェ！';
+        advice = 'HDL-Cが異常で、LDL-Cがやや高めだメェ。<br>医師に相談して、食生活を見直すメェ！';
     }
     // HDL-C異常 + 中性脂肪要注意
     else if (hdlStatus === 'abnormal' && ldlStatus === 'normal' && tgStatus === 'caution') {
-        advice = 'HDL-Cが異常で、中性脂肪がやや高めだメェ。医師に相談し、生活習慣を見直しましょうメェ！';
+        advice = 'HDL-Cが異常で、中性脂肪がやや高めだメェ。<br>医師に相談し、生活習慣を見直すメェ！';
     }
     // LDL-C異常 + 中性脂肪要注意
     else if (hdlStatus === 'normal' && ldlStatus === 'abnormal' && tgStatus === 'caution') {
-        advice = 'LDL-Cが異常で、中性脂肪がやや高めだメェ。医師に相談し、食事の改善をしましょうメェ！';
+        advice = 'LDL-Cが異常で、中性脂肪がやや高めだメェ。<br>医師に相談し、食事の改善するメェ！';
     }
 
     // HDL-C要注意 + LDL-C要注意 + 中性脂肪異常
     else if (hdlStatus === 'caution' && ldlStatus === 'caution' && tgStatus === 'abnormal') {
-        advice = 'HDL-CとLDL-Cが要注意で、中性脂肪が異常だメェ。生活習慣を改善して、医師に相談しましょうメェ！';
+        advice = 'HDL-CとLDL-Cが要注意で、中性脂肪が異常だメェ。<br>生活習慣を改善して、医師に相談するメェ！';
     }
     // HDL-C異常 + LDL-C要注意 + 中性脂肪要注意
     else if (hdlStatus === 'abnormal' && ldlStatus === 'caution' && tgStatus === 'caution') {
-        advice = 'HDL-Cが異常で、LDL-Cと中性脂肪がやや高めだメェ。医師に相談して、生活習慣を見直しましょうメェ！';
+        advice = 'HDL-Cが異常で、LDL-Cと中性脂肪がやや高めだメェ。<br>医師に相談して、生活習慣を見直すメェ！';
     }
     // HDL-C要注意 + LDL-C異常 + 中性脂肪要注意
     else if (hdlStatus === 'caution' && ldlStatus === 'abnormal' && tgStatus === 'caution') {
-        advice = 'HDL-Cがやや低めで、LDL-Cが異常、中性脂肪がやや高めだメェ。医師に相談して、運動と食事の改善が必要だメェ！';
+        advice = 'HDL-Cがやや低めで、LDL-Cが異常、中性脂肪がやや高めだメェ。<br>医師に相談して、運動と食事の改善が必要だメェ！';
     }
 
     // すべてが異常
     else if (hdlStatus === 'abnormal' && ldlStatus === 'abnormal' && tgStatus === 'abnormal') {
-        advice = 'HDL-C、LDL-C、中性脂肪のすべてが異常だメェ。すぐに医師に相談してくださいメェ！';
+        advice = 'HDL-C、LDL-C、中性脂肪のすべてが異常だメェ。<br>すぐに医師に相談するメェ！';
     }
 
     // アドバイスを表示
@@ -543,9 +535,6 @@ displayLipidAdvice();
 
 
 function evaluateDiabetesLevels() {
-    let hba1cStatus = '';   // HbA1cの状態
-    let fastingBloodSugarStatus = '';   // 空腹時血糖の状態
-
     // HbA1cの評価
     if (hba1c > standards.hba1c.abnormal) {
         hba1cStatus = 'abnormal';
@@ -570,9 +559,6 @@ function evaluateDiabetesLevels() {
 
 
 function displayDiabetesAdvice() {
-    let hba1cStatus = '';  // HbA1cの状態
-    let fastingBloodSugarStatus = '';  // 空腹時血糖の状態
-
     // HbA1cの評価
     if (hba1c > standards.hba1c.abnormal) {
         hba1cStatus = 'abnormal';
@@ -595,39 +581,39 @@ function displayDiabetesAdvice() {
 
     // すべてが正常
     if (hba1cStatus === 'normal' && fastingBloodSugarStatus === 'normal') {
-        advice = '糖尿病の心配はないメェ。引き続き健康を維持しましょうメェ！';
+        advice = '糖尿病の心配はないメェ。<br>健康だメェ。';
     }
     // HbA1cが要注意で、空腹時血糖が正常
     else if (hba1cStatus === 'caution' && fastingBloodSugarStatus === 'normal') {
-        advice = 'HbA1cがやや高めだメェ。生活習慣に気をつけて、血糖値を安定させましょうメェ！';
+        advice = 'HbA1cがやや高めだメェ。<br>生活習慣に気をつけて、血糖値を安定させるメェ。';
     }
     // 空腹時血糖が要注意で、HbA1cが正常
     else if (hba1cStatus === 'normal' && fastingBloodSugarStatus === 'caution') {
-        advice = '空腹時血糖がやや高めだメェ。食生活に気をつけましょうメェ！';
+        advice = '空腹時血糖がやや高めだメェ。<br>食生活に気をつけるメェ。';
     }
     // HbA1cが異常で、空腹時血糖が正常
     else if (hba1cStatus === 'abnormal' && fastingBloodSugarStatus === 'normal') {
-        advice = 'HbA1cが高いメェ。医師に相談してくださいメェ！';
+        advice = 'HbA1cが高いメェ。<br>医師に相談するメェ。';
     }
     // 空腹時血糖が異常で、HbA1cが正常
     else if (hba1cStatus === 'normal' && fastingBloodSugarStatus === 'abnormal') {
-        advice = '空腹時血糖が高いメェ。医師に相談してくださいメェ！';
+        advice = '空腹時血糖が高いメェ。<br>医師に相談するメェ。';
     }
     // HbA1cが要注意で、空腹時血糖も要注意
     else if (hba1cStatus === 'caution' && fastingBloodSugarStatus === 'caution') {
-        advice = 'HbA1cと空腹時血糖がどちらも要注意だメェ。生活習慣を改善しましょうメェ！';
+        advice = 'HbA1cと空腹時血糖がどちらも要注意だメェ。<br>生活習慣を改善すると良いメェ。';
     }
     // HbA1cが異常で、空腹時血糖が要注意
     else if (hba1cStatus === 'abnormal' && fastingBloodSugarStatus === 'caution') {
-        advice = 'HbA1cが異常で、空腹時血糖もやや高めだメェ。医師に相談して、改善策を見つけましょうメェ！';
+        advice = 'HbA1cが異常で、空腹時血糖もやや高めだメェ。<br>医師に相談するメェ。';
     }
     // 空腹時血糖が異常で、HbA1cが要注意
     else if (hba1cStatus === 'caution' && fastingBloodSugarStatus === 'abnormal') {
-        advice = '空腹時血糖が異常で、HbA1cもやや高めだメェ。医師に相談して、改善策を考えましょうメェ！';
+        advice = '空腹時血糖が異常で、HbA1cもやや高めだメェ。<br>医師に相談すると良いメェ。';
     }
     // どちらも異常
     else if (hba1cStatus === 'abnormal' && fastingBloodSugarStatus === 'abnormal') {
-        advice = 'HbA1cと空腹時血糖のどちらも異常だメェ。すぐに医師に相談してくださいメェ！';
+        advice = 'HbA1cと空腹時血糖のどちらも異常だメェ。<br>すぐに医師に相談するメェ！';
     }
 
     // アドバイスを表示
@@ -636,3 +622,64 @@ function displayDiabetesAdvice() {
 
 
 displayDiabetesAdvice();
+
+
+// 出力する画像の要素
+let imageElementLipid = document.getElementById('statusImageLipid');
+let imageElementBloodPressure = document.getElementById('statusImageBloodPressure');
+let imageElementDiabetes = document.getElementById('statusImageDiabetes');
+
+
+// 血圧の状態に基づいて画像を切り替える関数
+function updateImageBasedOnStatusBloodPressure() {
+    // 1つでもabnormalがある場合
+    if (systolicStatus === 'abnormal' || diastolicStatus === 'abnormal') {
+        imageElementBloodPressure.src = 'hituzi_3batu.png';  // 3つの×の画像を表示
+    }
+    // 1つでもcautionがある場合
+    else if (systolicStatus === 'caution' || diastolicStatus === 'caution') {
+        imageElementBloodPressure.src = 'hituzi_2sankaku.png';  // 三角の画像を表示
+    }
+    // すべてnormalの場合
+    else if (systolicStatus === 'normal' && diastolicStatus === 'normal') {
+        imageElementBloodPressure.src = 'hituzi_1maru.png';  // 丸の画像を表示
+    }
+}
+
+// 脂質の状態に基づいて画像を切り替える関数
+function updateImageBasedOnStatusLipid() {
+    // 1つでもabnormalがある場合
+    if (hdlStatus === 'abnormal' || ldlStatus === 'abnormal' || tgStatus === 'abnormal') {
+        imageElementLipid.src = 'hituzi_3batu.png';  // 3つの×の画像を表示
+    } 
+    // 1つでもcautionがある場合
+    else if (hdlStatus === 'caution' || ldlStatus === 'caution' || tgStatus === 'caution') {
+        imageElementLipid.src = 'hituzi_2sankaku.png';  // 三角の画像を表示
+    } 
+    // すべてnormalの場合
+    else if (hdlStatus === 'normal' && ldlStatus === 'normal' && tgStatus === 'normal') {
+        imageElementLipid.src = 'hituzi_1maru.png';  // 丸の画像を表示
+    }
+}
+
+// 血糖の状態に基づいて画像を切り替える関数
+function updateImageBasedOnStatusDiabetes() {
+    // 1つでもabnormalがある場合
+    if (hba1cStatus === 'abnormal' || fastingBloodSugarStatus === 'abnormal') {
+        imageElementDiabetes.src = 'hituzi_3batu.png';  // 3つの×の画像を表示
+    }
+    // 1つでもcautionがある場合
+    else if (hba1cStatus === 'caution' || fastingBloodSugarStatus === 'caution') {
+        imageElementDiabetes.src = 'hituzi_2sankaku.png';  // 三角の画像を表示
+    }
+    // すべてnormalの場合
+    else if (hba1cStatus === 'normal' && fastingBloodSugarStatus === 'normal') {
+        imageElementDiabetes.src = 'hituzi_1maru.png';  // 丸の画像を表示
+    }
+}
+
+
+// 関数を呼び出して画像を更新
+updateImageBasedOnStatusLipid();
+updateImageBasedOnStatusBloodPressure();
+updateImageBasedOnStatusDiabetes();
